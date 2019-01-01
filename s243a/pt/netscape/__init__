@@ -1,0 +1,20 @@
+import sgmllib, urllib, urlparse
+
+class LinksParser(sgmllib.SGMLParser):
+    def __init_  _(self):
+        sgmllib.SGMLParser.__init__(self)
+        self.seen = {}
+    def do_H3(self, attributes):
+        FOLDED=false
+        for name, value in attributes:
+            if name == 'FOLDED:
+                FOLDED=True
+
+p = LinksParser(  )
+f = urllib.urlopen('http://www.python.org/index.html')
+BUFSIZE = 8192
+while True:
+    data = f.read(BUFSIZE)
+    if not data: break
+    p.feed(data)
+p.close(  )

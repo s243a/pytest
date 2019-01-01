@@ -1,0 +1,116 @@
+How Does Cross-Segment FEC Work
+
+I'm trying to understand freenets "Cross Segment Forward Error Correction" and I can't find any documentation on this. I looked a little at the code so here is what I think it does (please correct me if I'm wrong).
+
+For each block:
+----------------------------
+1. Get a random number. The seed will be based on the sha256 hash for the (segment-split file? see multi-level-meta-data).:
+----------------------------
+Random crossSegmentRandom = new MersenneTwister(Metadata.getCrossSegmentSeed(metadata.getHashes(), metadata.getHashThisLayerOnly()));
+
+https://github.com/freenet/fred/blob/4e6bf4b0ea42b713a4261778fac9ca376dc28117/src/freenet/client/async/SplitFileFetcherStorage.java#L466
+
+The random number generator used is "Mersenne Twister"
+
+
+https://web.archive.org/web/20040905090716/http://www.math.sci.hiroshima-u.ac.jp:80/~m-mat/MT/emt.html
+https://github.com/freenet/fred/blob/4e6bf4b0ea42b713a4261778fac9ca376dc28117/src/freenet/support/math/MersenneTwister.java
+
+----------------------------
+2. Allocate cross-segments blocks based on psudo-random block-offset (the algorithm is reproducible) from within the current segment.  
+----------------------------
+ Random crossSegmentRandom = new 
+
+ for (int i = 0; i < 10; i++) {
+    x = xsRandom.nextInt(segments.length);
+    SplitFileInserterSegmentStorage seg = segments[x];
+    int blockNum = seg.allocateCrossDataBlock(segment, xsRandom);
+    if (blockNum >= 0) {
+         segment.addDataBlock(seg, blockNum);
+        return;
+    }
+}
+https://github.com/freenet/fred/blob/4e6bf4b0ea42b713a4261778fac9ca376dc28117/src/freenet/client/async/SplitFileInserterStorage.java#L995
+
+
+The source for seg.allocateCrossDataBlock(segment, xsRandom) can be found at:
+
+https://github.com/freenet/fred/blob/4e6bf4b0ea42b713a4261778fac9ca376dc28117/src/freenet/client/async/SplitFileFetcherSegmentStorage.java#L1006
+
+-------------------------------
+3. Once the cross segment blocks are assembled (with the corresponding check blocks), the Reed Solomon algorithm can be used to create the missing blocks (or check blocks) from those that were assembled in a given array of blocks that were taken across segments. This provides a redundant way of recovering blocks within a segment. 
+
+
+=====================Some math (See Notes below) ======================|
+- Max File Section per per RS-Code is 80MB which is divided in to 128 segments
+- 80MB/128 = 0.625MB = 640kB per segment
+- Then each 640kB segment is divided into 20 Blocks of size 32kB?
+
+Questions:
+1. Is each 640kB segment a separate split file?
+2. If so then presumably there is also one or more "cross-segment split-files" that point-to or contain 640kB of data, which is made up of one block (plus check block) from each segment blocks, where each block (and check-block) is 32kB. 
+3. How many of these cross-segment split files are there per 640kB segment?
+
+
+================== Random Notes =======================
+"The other big change, which is arguably even more important, is cross-segment splitfile redundancy: For any file of at least 80MB, instead of just chopping it up into independant segments of 128 data and 128 check blocks (the size varies a bit according to even segment splitting), we add a second layer of redundancy which operates between segments in a similar way to that used on data/audio CD's. This greatly improves the reliability of very big files, assuming the same probability of a single block being found (or lost). The simulated figures are really quite remarkable, but we'll see what difference it makes in practice..." -- http://amphibian.dyndns.org/flogmirror/
+
+=================== Split Files (Current wiki) ========================
+
+The current implementation uses Reed-Solomon codes, implemented as Vandermonde codes by the Onion Networks FEC library. The RS codes can decode the k data blocks from any k of the n data blocks plus check blocks.
+
+However, they are limited to 256 total data plus check blocks for the 8-bit word size used by Freenet. Moving to 16-bit words and longer codes would have a substantial performance penalty.
+
+Therefore, large splitfiles are broken into multiple segments, each having a maximum of 128 data and 128 check blocks.
+
+As of version 1255 of fred, cross-segment FEC is used, which aims to remove the problem of big files stalling on 99.9% waiting for last 1 or few segments. This important change should dramatically improve lifetime of keys, fixing a problem that was affecting mostly big files (over around 80MiB).
+
+https://github.com/freenet/wiki/wiki/Splitfile
+
+=================== Split Files (old wiki) ========================
+
+Splitfiles are used for any large file on Freenet. Because CHK keys are limited to 32 KiB, most files must be stored spread across many CHK keys, in a structure called a splitfile. The list of those keys is then stored in another CHK key, which is used as the key for the whole file.
+
+Because individual blocks are unreliable, splitfiles use forward error correction (FEC). The data is first broken into 32 KiB blocks, and then an equal number of check blocks are created to go with them. To recover the original data, some combination of data and check blocks is required.
+
+The current implementation uses Reed-Solomon codes, implemented as Vandermonde codes by the Onion Networks FEC library. The RS codes can decode the k data blocks from any k of the n data plus check blocks. However, they are limited to 256 total data plus check blocks for the 8-bit word size used by Freenet. (Moving to 16-bit words and longer codes would have a substantial performance penalty.) Therefore, large splitfiles are broken into multiple segments, each having a maximum of 128 data and 128 check blocks.
+
+After version 1255 of Freenet, now cross-segment FEC is used, aimed to remove problem of big files stalling on 99.9% waiting for last 1 or few segments. This important change should dramatically improve lifetime of keys, fixing a problem that was affecting mostly big files (over around 80MB). 
+
+http://www.statdomain.org/wiki/index.php/Splitfile
+
+
+========================= CHK (New Wiki) ===========================
+
+These are created by making a hash of the file. This is like a fingerprint of the file: it is generally a lot smaller than the file itself. It should not be possible for two different files to have the same CHK; a CHK uniquely identifies a file (assuming that SHA-256 is not broken!).
+
+This hash is used as an index to the file, in a similar way to the address, or URL, or a standard website. The CHK key is generated automatically, so it won't look as user-friendly as a domain name. For user-friendly keys, have a look at SSK.
+
+https://github.com/freenet/wiki/wiki/Content-Hash-Key
+
+========================= FEC Algorithm Used ========================
+
+Freenet uses the FEC algorithm from the com.onionnetworks package.
+
+The relevant packages are:
+
+com.onionnetworks.fec.FECCode.java 
+
+https://bitbucket.org/onionnetworks/fec/src/e46c15b44b6607d22ed296a50c5dab988950e5b4/src/com/onionnetworks/fec/FECCode.java?at=default&fileviewer=file-view-default
+https://github.com/freenet/contrib/blob/master/onion-fec/src/com/onionnetworks/fec/FECCode.java
+
+com.onionnetworks.util.Util
+https://github.com/freenet/contrib/blob/master/onion-common/src/com/onionnetworks/util/Util.java
+
+com.onionnetworks.util.Buffer
+https://github.com/freenet/contrib/blob/master/onion-common/src/com/onionnetworks/util/Buffer.java
+
+Here is an example on how to use the onnetworks FECCode class:
+
+https://github.com/jc/javafec-example/blob/master/JavaFecExample.java
+
+========================= Multi-Level Meta-Data ================================
+
+If set, the bottom layer of any splitfiles inserted will be encrypted using this key, rather than a key derived from the hash of the content. This is useful for reinserting data that was inserted to an SSK. SSKs automatically use a random key for the bottom layer splitfile as of 1254, unless CompatibilityMode is set to an earlier version. Note that upper layers (i.e. multi-level metadata) are still encrypted according to the data hash; they are not predictable so there is no need to complicate matters. 
+
+https://github.com/freenet/wiki/wiki/FCPv2-ClientPutDiskDir

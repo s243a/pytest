@@ -1,0 +1,35 @@
+I'm making some progress here. My javascript to send json from the firefox scratchpad to a python bottle server shown at:
+
+https://pastebin.com/tVDwjk4g
+
+and the python is testing the rest api (seems like a fancy way of saying receiving json). 
+
+https://pastebin.com/uGerTd6D
+
+Firefox doesn't seem to like:
+
+xhr.open("post", "http://127.0.0.1:8082/KSK/insert", true);
+
+it upgrades the request to SSL and then I get the following SSL error:
+
+https://pastebin.com/KbGvjyRf
+
+I think I"ll either need to disable this firefox security policy / add a self signed certificate or more extreme a "self signed certificate authority". 
+
+I need to do more research. Anyway, this javascript error is preventing me from testing the python code. My python code will insert some text into freenet via the pyFreenet package:
+https://github.com/blueyed/lib-pyFreenet-staging/blob/master/tutorial.py
+
+
+ I'm also testing asynchronous communication with the python code. In particular I"m using gevent/greenlet. This is the same asynchrony packages that is used by zeronet.
+
+https://bottlepy.org/docs/dev/async.html
+https://stackoverflow.com/questions/20824218/how-to-implement-someasyncworker-from-bottle-asynchronous-primer 
+http://www.gevent.org/api/gevent.greenlet.html#gevent.Greenlet 
+
+I'll discuss more about this later after some further troubleshooting.
+
+
+
+======================
+
+https://www.facebook.com/groups/ethicalhacking.hacker/permalink/286723258631252/?comment_id=287270455243199&comment_tracking=%7B%22tn%22%3A%22R%22%7D 

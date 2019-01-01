@@ -1,0 +1,10 @@
+(lp0
+(i__main__
+Section
+p1
+(dp2
+S'text'
+p3
+S''
+p4
+sba.

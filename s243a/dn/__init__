@@ -1,0 +1,12 @@
+import urllib2
+url='https://www.democracynow.org/shows'
+page = urllib2.urlopen(url)
+from bs4 import BeautifulSoup
+soup = BeautifulSoup(page)
+#<a data-ga-action="Show Preview: Story" href="/2018/12/27/without_notifying_anyone_ice_dumps_hundreds" tabindex="0">
+#  <div class="media image">
+#    <img class="modern" src="https://www.democracynow.org/images/story/02/45402/w320/SEG_ICE-DumpingMigrants-ElPaso-3.jpg"
+#      alt="Seg ice dumpingmigrants elpaso 3">
+#  </div><h3>Without Notifying Anyone, <span class="caps">ICE</span> Dumps Hundreds of Migrants at El Paso Bus Station Around Christmas</h3>
+#</a>
+all_tables=soup.find_all('table')

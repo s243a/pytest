@@ -1,0 +1,19 @@
+lambda compose fn1,fn2: fn2(fn1()) 
+bindAply = lambda x: compose(action1(),lambda x: action2(x))
+pupURI=labmda: out.node.put(uri, nessage, mimetype=kw.mimetype, verbosity=kw.verbosity)
+setJobOrCB=lambda x: iff(async=true,kw.startCB=x,kw.job= x())
+bindAply(putURI,                             #if async returns callback, else returns job
+         setJobOrCB) #x is the result of put URI
+iff(async==True,kw['k1']=y,kw['k2']=y
+ifNone(a,b) = a if a is None else b
+def mReturn(fn):
+    return lambda x: [x]+[fn(x)]
+def doBind(call=lambda f: f(),bind=bindAply,rtn=mReturn,monad=None,*fns):
+    if monad is not None:
+        call=ifNone(call,monad.__call__)
+        bind=ifNone(bind,monad.mbind)
+        rtn=ifNone(rtn,monad.mreturn)
+    vars=[]
+    out=fns(i)
+    for i in range(1,len(fns)):
+        bind(fns(i),lambda x: rtn(call(fins(i+1,))

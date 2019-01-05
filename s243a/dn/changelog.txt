@@ -1,0 +1,2 @@
+1. change on_show to on_story
+2. generate dictonary of parsed results from a lambda expression

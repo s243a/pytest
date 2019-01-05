@@ -1,4 +1,4 @@
-import os,sys,re
+import os,sys,re,pdb
 PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
 def isString(obj):
@@ -17,8 +17,9 @@ def mkdir(path): #TODO move to s243a.util
 def parseURL(url,outKey=None):
     print("url="+url)
     #a_pattern=r'^(?P<protocol>[a-zA-Z]+)\:\/\/(?P<domain>[^/]+)(?P<path>\/.+)\/(?P<bname>[^/]*)$'
-    a_pattern=r'^((?P<protocol>[a-zA-Z]*)\:\/\/(?P<domain>[^/]+))*(?P<path>\/.+)\/(?P<bname>[^/]*)$'
+    a_pattern=r'^((?P<protocol>[a-zA-Z]*)\:\/\/(?P<domain>[^/]+))*(?P<path>\/?.+)\/(?P<bname>[^/]*)$'
     m=re.match(a_pattern,url)
+    
     matches=m.groupdict()
     if outKey is None:
         return matches
@@ -65,12 +66,15 @@ def getURLPart(url,*args,**defaults):
     else:
         return out[0]
 def stripRoot(url,root):
+    print("Stripping Root")
     print("url="+str(url))
     print("root="+str(root))
+    #pdb.set_trace()
     part1=url[0:len(root)]
     if str(part1)==str(root):
         return url[len(root):]
     else:
+        #pdb.set_trace()
         return url
 def writeHTMLFooter(f):
     print('writeHTMLFooter')
@@ -81,3 +85,17 @@ def writeHTMLHeader(f):
     f.write("%s\n" % '<!DOCTYPE html>')
     f.write("%s\n" % '<html>')
     f.write("%s\n" % '<body>')
+def isiterable(p_object):
+    try:
+        it = iter(p_object)
+    except TypeError: 
+        return False
+    return True
+#https://stackoverflow.com/a/4668679/10866035
+def itterator_or_None(obj):
+    #print(str(obj))
+    #pdb.set_trace()
+    if isiterable(obj):
+        return obj
+    else:
+        return [None]
